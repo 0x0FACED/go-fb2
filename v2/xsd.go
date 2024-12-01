@@ -5,7 +5,6 @@ import (
 	"errors"
 )
 
-// Пространства имен
 const (
 	XMLNS_FICTIONBOOK = "http://www.gribuser.ru/xml/fictionbook/2.0"
 	XMLNS_XLINK       = "http://www.w3.org/1999/xlink"
@@ -13,30 +12,34 @@ const (
 	XMLNS_XS          = "http://www.w3.org/2001/XMLSchema"
 )
 
-// FB2 описывает корневую структуру FB2 файла
 type FB2 struct {
 	XMLName     xml.Name    `xml:"FictionBook"`
-	XMLNS       *string     `xml:"xmlns,attr"`       // Основное пространство имен
-	XMLNSXLink  *string     `xml:"xmlns:l,attr"`     // Пространство имен для ссылок
-	XMLNSGenre  *string     `xml:"xmlns:genre,attr"` // Пространство имен для жанров
-	XMLNSXS     *string     `xml:"xmlns:xs,attr"`    // Пространство имен для схемы
+	XMLNS       *string     `xml:"xmlns,attr"`
+	XMLNSXLink  *string     `xml:"xmlns:l,attr"`
+	XMLNSGenre  *string     `xml:"xmlns:genre,attr"`
+	XMLNSXS     *string     `xml:"xmlns:xs,attr"`
 	Stylesheet  []string    `xml:"stylesheet"`
 	Description Description `xml:"description"`
 	Bodies      []Body      `xml:"body"`
 	Binary      []Binary    `xml:"binary"`
 }
 
-// Body содержит секции текста книги
 type Body struct {
+	Epigraph *Epigraph `xml:"epigraph,omitempty"`
 	Sections []Section `xml:"section"`
 	Name     string    `xml:"name,attr,omitempty"`
 }
 
-// Section представляет собой раздел текста книги
 type Section struct {
-	Title       Title     `xml:"title,omitempty"`
-	P           []string  `xml:"p"`
-	Subsections []Section `xml:"section,omitempty"` // Добавленное для вложенных секций
+	XMLName     xml.Name    `xml:"section"`
+	Title       Title       `xml:"title,omitempty"`
+	Paragraphs  []Paragraph `xml:"p"`
+	Subsections []Section   `xml:"section,omitempty"`
+}
+
+type Subtitle struct {
+	ID   string `xml:"id,attr,omitempty"`
+	Text string `xml:",chardata"`
 }
 
 type Paragraph struct {
@@ -47,28 +50,54 @@ type Title struct {
 	Paragraphs []Paragraph `xml:"p,omitempty"`
 }
 
-// Binary описывает бинарные данные (например, изображения)
-type Binary struct {
-	Value       string `xml:",chardata"`
-	ContentType string `xml:"content-type,attr"`
-	ID          string `xml:"id,attr"`
+type Annotation struct {
+	Paragraphs []Paragraph `xml:"p,omitempty"`
+	Poem       *Poem       `xml:"poem,omitempty"`
+	Cite       *Cite       `xml:"cite,omitempty"`
 }
 
-// Description содержит метаданные книги
+type Poem struct {
+	Title    *Title    `xml:"title,omitempty"`
+	Epigraph *Epigraph `xml:"epigraph,omitempty"`
+	Stanzas  []Stanza  `xml:"stanza"`
+}
+
+type Epigraph struct {
+	Paragraphs []Paragraph `xml:"p,omitempty"`
+}
+
+type Stanza struct {
+	Verses []Verse `xml:"v"`
+}
+
+type Verse struct {
+	Text string `xml:",chardata"`
+}
+
+type Cite struct {
+	Paragraphs []Paragraph `xml:"p"`
+	TextAuthor string      `xml:"text-author,omitempty"`
+}
+
+type Binary struct {
+	ID          string `xml:"id,attr"`
+	ContentType string `xml:"content-type,attr"`
+	Value       string `xml:",chardata"`
+}
+
 type Description struct {
 	TitleInfo    TitleInfo    `xml:"title-info"`
-	Coverpage    Coverpage    `xml:"coverpage"`
 	DocumentInfo DocumentInfo `xml:"document-info"`
 	PublishInfo  PublishInfo  `xml:"publish-info,omitempty"`
 	CustomInfo   []CustomInfo `xml:"custom-info,omitempty"`
 }
 
-// TitleInfo содержит основную информацию о книге
 type TitleInfo struct {
 	Genre      []string     `xml:"genre"`
 	Author     []AuthorType `xml:"author"`
 	BookTitle  string       `xml:"book-title"`
-	Annotation string       `xml:"annotation,omitempty"`
+	Annotation Annotation   `xml:"annotation,omitempty"`
+	Coverpage  Coverpage    `xml:"coverpage"`
 	Keywords   string       `xml:"keywords,omitempty"`
 	Date       Date         `xml:"date"`
 	Lang       string       `xml:"lang"`
@@ -77,7 +106,6 @@ type TitleInfo struct {
 	Sequence   Sequence     `xml:"sequence,omitempty"`
 }
 
-// AuthorType описывает автора книги
 type AuthorType struct {
 	FirstName  string `xml:"first-name"`
 	MiddleName string `xml:"middle-name,omitempty"`
@@ -87,17 +115,15 @@ type AuthorType struct {
 	Email      string `xml:"email,omitempty"`
 }
 
-// Coverpage описывает обложку книги
 type Coverpage struct {
 	Image *Image `xml:"image"`
 }
 
-// Image представляет изображение с поддержкой пространства имен xlink
 type Image struct {
-	Href string `xml:"xlink:href,attr"`
+	XMLName xml.Name `xml:"image"`
+	Href    string   `xml:"l:href,attr"`
 }
 
-// DocumentInfo содержит информацию о документе
 type DocumentInfo struct {
 	Author      []AuthorType `xml:"author"`
 	ProgramUsed string       `xml:"program-used,omitempty"`
@@ -109,7 +135,6 @@ type DocumentInfo struct {
 	History     string       `xml:"history,omitempty"`
 }
 
-// PublishInfo содержит издательскую информацию
 type PublishInfo struct {
 	BookName  string   `xml:"book-name"`
 	Publisher string   `xml:"publisher"`
@@ -119,19 +144,16 @@ type PublishInfo struct {
 	Sequence  Sequence `xml:"sequence,omitempty"`
 }
 
-// CustomInfo содержит пользовательскую информацию
 type CustomInfo struct {
 	InfoType string `xml:"info-type,attr"`
 	Value    string `xml:",chardata"`
 }
 
-// Sequence описывает серию книги
 type Sequence struct {
 	Name   string `xml:"name,attr"`
 	Number int    `xml:"number,attr,omitempty"`
 }
 
-// Date описывает дату с атрибутами
 type Date struct {
 	Value string `xml:"value,attr,omitempty"`
 	Text  string `xml:",chardata"`
@@ -215,5 +237,41 @@ func (fb2 *FB2) FixNamespaces() {
 			}
 			*fb2.XMLNSXS = XMLNS_XS
 		}
+	}
+}
+
+func (fb2 *FB2) unmarshalCoverpage(data []byte) {
+	isTagOpened := false
+	startIdx := 0
+	endIdx := 0
+	tagName := ""
+	for i, v := range data {
+		if isTagOpened {
+			switch v {
+			case '>':
+				if tagName != "p" && tagName != "/p" {
+				}
+				isTagOpened = false
+				if tagName == "coverpage" {
+					startIdx = i + 1
+				} else if tagName == "/coverpage" {
+					endIdx = i - 11
+					break
+				}
+				tagName = ""
+				break
+			default:
+				tagName += string(v)
+			}
+		} else {
+			if v == '<' {
+				isTagOpened = true
+			}
+		}
+	}
+
+	if endIdx > startIdx {
+		href := parseImage(data[startIdx:endIdx])
+		fb2.Description.TitleInfo.Coverpage.Image.Href = href
 	}
 }
