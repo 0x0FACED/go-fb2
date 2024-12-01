@@ -16,18 +16,25 @@ func NewParser() *Parser {
 func (p *Parser) Unmarshal(reader io.Reader, isStrict bool) (*FB2, error) {
 	var fb2 FB2
 
-	decoder := xml.NewDecoder(reader)
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	decoder := xml.NewDecoder(bytes.NewReader(data))
 
 	if isStrict {
 		decoder.Strict = true
 	}
 
-	err := decoder.Decode(&fb2)
+	err = decoder.Decode(&fb2)
 	if err != nil {
 		return nil, err
 	}
 
 	fb2.FixNamespaces()
+
+	fb2.unmarshalCoverpage(data)
 
 	return &fb2, nil
 }
@@ -72,4 +79,22 @@ func (p *Parser) MarshalToFile(fb2 *FB2, filePath string, pretty bool) error {
 	}
 
 	return os.WriteFile(filePath, xmlData, 0644)
+}
+
+func parseImage(data []byte) string {
+	result := ""
+	isQuoteOpened := false
+	for _, v := range data {
+		if isQuoteOpened {
+			if v == '"' {
+				break
+			}
+			result += string(v)
+		} else {
+			if v == '"' {
+				isQuoteOpened = true
+			}
+		}
+	}
+	return result
 }
