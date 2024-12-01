@@ -6,7 +6,6 @@ This library contains a **small possible** description of the FB2 format.
 
 There are a lot of tags and they can be nested in many different ways. To make parsing of any fb2 book into a structure possible, there are many aspects to consider, which will probably be improved in the future.
 
-**Small bug**: there is a problem with inserting images by relative paths.
 
 ## Features
 
@@ -61,7 +60,7 @@ go get -u github.com/0x0FACED/go-fb2
 
 ## Issues
 
-Is there a mistake? Create an issue!
+Is there a mistake? Create an [issue](https://github.com/0x0FACED/go-fb2/issues)!
 
 ## License
 
